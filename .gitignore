@@ -4,6 +4,10 @@ config.json
 # Output CSV files
 *.csv
 
+# Cache and runtime files
+.lastrun
+.processcache.json
+
 # PowerShell/Windows
 *.ps1xml
 *.psd1
