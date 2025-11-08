@@ -1,0 +1,21 @@
+# Configuration files with credentials
+config.json
+
+# Output CSV files
+*.csv
+
+# PowerShell/Windows
+*.ps1xml
+*.psd1
+*-help.xml
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS Files
+.DS_Store
+Thumbs.db

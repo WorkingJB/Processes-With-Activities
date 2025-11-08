@@ -1,0 +1,20 @@
+{
+  "ODataAPI": {
+    "Region": "au",
+    "BaseUrl": "https://au-reporting.promapp.io/odata/",
+    "Username": "Promaster",
+    "ApiKey": "YOUR_ODATA_API_KEY_HERE"
+  },
+  "ProcessManagerAPI": {
+    "BaseUrl": "https://your-tenant.promapp.io",
+    "AutomationTenant": "your-tenant-name",
+    "Username": "YOUR_USERNAME_HERE",
+    "Password": "YOUR_PASSWORD_HERE",
+    "ClientId": "promappwebclient",
+    "ClientSecret": "",
+    "GrantType": "password"
+  },
+  "Output": {
+    "CsvFileName": "ProcessReport.csv"
+  }
+}
