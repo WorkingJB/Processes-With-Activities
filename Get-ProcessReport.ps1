@@ -212,17 +212,50 @@ function Get-ODataProcesses {
 
         Write-Verbose "Requesting: $url"
 
-        $response = Invoke-RestMethod -Uri $url -Method Get -Headers $headers -ErrorAction Stop
+        # Initialize collection to store all processes across pages
+        $allProcesses = @()
+        $pageCount = 0
 
-        # OData responses typically have a 'value' property containing the array of results
-        if ($response.value) {
-            $processes = $response.value
-        } else {
-            $processes = $response
-        }
+        # Loop through all pages of results
+        do {
+            $pageCount++
+            Write-Verbose "Fetching page $pageCount from OData API..."
 
-        Write-Host "Successfully retrieved $($processes.Count) processes from OData API" -ForegroundColor Green
-        return $processes
+            $response = Invoke-RestMethod -Uri $url -Method Get -Headers $headers -ErrorAction Stop
+
+            # OData responses typically have a 'value' property containing the array of results
+            if ($response.value) {
+                $pageProcesses = $response.value
+                $allProcesses += $pageProcesses
+                Write-Verbose "Retrieved $($pageProcesses.Count) processes from page $pageCount (Total so far: $($allProcesses.Count))"
+            } else {
+                # Handle non-standard OData response
+                $allProcesses += $response
+                Write-Verbose "Retrieved processes from non-standard response format"
+            }
+
+            # Check for next page link (OData pagination)
+            # Common property names: @odata.nextLink, odata.nextLink, nextLink
+            $nextLink = $null
+            if ($response.'@odata.nextLink') {
+                $nextLink = $response.'@odata.nextLink'
+            } elseif ($response.'odata.nextLink') {
+                $nextLink = $response.'odata.nextLink'
+            } elseif ($response.nextLink) {
+                $nextLink = $response.nextLink
+            }
+
+            if ($nextLink) {
+                Write-Verbose "Next page available at: $nextLink"
+                $url = $nextLink
+            } else {
+                Write-Verbose "No more pages available"
+            }
+
+        } while ($nextLink)
+
+        Write-Host "Successfully retrieved $($allProcesses.Count) processes from OData API ($pageCount page(s))" -ForegroundColor Green
+        return $allProcesses
     }
     catch {
         Write-Error "Failed to retrieve processes from OData API: $_"
