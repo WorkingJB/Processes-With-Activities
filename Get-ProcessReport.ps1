@@ -379,11 +379,15 @@ try {
         Write-Host "Last run: $lastRunDate" -ForegroundColor White
         Write-Host "Cached processes: $($cachedProcesses.Count)" -ForegroundColor White
         Write-Host "========================================" -ForegroundColor Green
+        Write-Host "`nPress Enter to exit..." -ForegroundColor Yellow
+        Read-Host
         exit 0
     }
 
     if ($odataProcesses.Count -eq 0 -and -not $lastRunDate) {
         Write-Warning "No processes found in OData API"
+        Write-Host "`nPress Enter to exit..." -ForegroundColor Yellow
+        Read-Host
         exit 0
     }
 
@@ -498,5 +502,7 @@ catch {
     Write-Host "ERROR: Script execution failed" -ForegroundColor Red
     Write-Host "========================================" -ForegroundColor Red
     Write-Error $_
+    Write-Host "`nPress Enter to exit..." -ForegroundColor Yellow
+    Read-Host
     exit 1
 }
