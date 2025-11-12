@@ -540,7 +540,11 @@ catch {
     Write-Host "`n========================================" -ForegroundColor Red
     Write-Host "ERROR: Script execution failed" -ForegroundColor Red
     Write-Host "========================================" -ForegroundColor Red
-    Write-Error $_
+    Write-Host "Error Message: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "`nFull Error Details:" -ForegroundColor Yellow
+    Write-Host $_.Exception -ForegroundColor Red
+    Write-Host "`nStack Trace:" -ForegroundColor Yellow
+    Write-Host $_.ScriptStackTrace -ForegroundColor Red
 }
 finally {
     # This block ALWAYS executes, regardless of success or failure
