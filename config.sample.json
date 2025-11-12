@@ -1,12 +1,12 @@
 {
   "ODataAPI": {
     "Region": "au",
-    "BaseUrl": "https://au-reporting.promapp.io/odata/",
+    "BaseUrl": "https://{{region}}-reporting.promapp.io/odata/",
     "Username": "Promaster",
     "ApiKey": "YOUR_ODATA_API_KEY_HERE"
   },
   "ProcessManagerAPI": {
-    "BaseUrl": "https://your-tenant.promapp.io",
+    "BaseUrl": "https://{{your-region}}.promapp.com/",
     "AutomationTenant": "your-tenant-name",
     "Username": "YOUR_USERNAME_HERE",
     "Password": "YOUR_PASSWORD_HERE",
