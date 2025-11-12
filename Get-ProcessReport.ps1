@@ -55,6 +55,18 @@ trap {
     exit 1
 }
 
+# Helper function to provide null-coalescing behavior (PowerShell 5.1 compatible)
+function Coalesce {
+    param([object[]]$Values)
+
+    foreach ($value in $Values) {
+        if ($null -ne $value -and $value -ne "") {
+            return $value
+        }
+    }
+    return ""
+}
+
 # Function to load configuration
 function Get-Configuration {
     param([string]$Path)
@@ -340,13 +352,13 @@ function New-ProcessReportRow {
     # Build the report row
     # Map OData fields to output columns - adjust field names based on actual OData schema
     $reportRow = [PSCustomObject]@{
-        "ProcessId" = $ODataProcess.Id ?? $ODataProcess.UniqueId ?? $ODataProcess.ProcessId ?? $ODataProcess.Guid
-        "Process Group Path" = $ODataProcess.ProcessGroupPath ?? $ODataProcess.GroupPath ?? ""
-        "Process Name" = $ODataProcess.Name ?? $ProcessDetails.Name ?? ""
-        "Process Status" = $ODataProcess.Status ?? $ProcessDetails.Status ?? ""
-        "Process Version" = $ODataProcess.Version ?? $ProcessDetails.Version ?? ""
-        "Process Expert" = $ODataProcess.ProcessExpert ?? $ODataProcess.Expert ?? $ProcessDetails.Expert ?? ""
-        "Process Owner" = $ODataProcess.ProcessOwner ?? $ODataProcess.Owner ?? $ProcessDetails.Owner ?? ""
+        "ProcessId" = Coalesce $ODataProcess.Id, $ODataProcess.UniqueId, $ODataProcess.ProcessId, $ODataProcess.Guid
+        "Process Group Path" = Coalesce $ODataProcess.ProcessGroupPath, $ODataProcess.GroupPath
+        "Process Name" = Coalesce $ODataProcess.Name, $ProcessDetails.Name
+        "Process Status" = Coalesce $ODataProcess.Status, $ProcessDetails.Status
+        "Process Version" = Coalesce $ODataProcess.Version, $ProcessDetails.Version
+        "Process Expert" = Coalesce $ODataProcess.ProcessExpert, $ODataProcess.Expert, $ProcessDetails.Expert
+        "Process Owner" = Coalesce $ODataProcess.ProcessOwner, $ODataProcess.Owner, $ProcessDetails.Owner
         "Assigned Roles" = $roleNames
         "Assigned System" = $systemTags
         "StateChangeDate" = $ODataProcess.StateChangeDate
@@ -426,10 +438,11 @@ try {
 
         # Get the process unique ID from OData response
         # The field name may vary - common options: Id, UniqueId, ProcessId, Guid
-        $processId = $odataProcess.Id ?? $odataProcess.UniqueId ?? $odataProcess.ProcessId ?? $odataProcess.Guid
+        $processId = Coalesce $odataProcess.Id, $odataProcess.UniqueId, $odataProcess.ProcessId, $odataProcess.Guid
 
         if (-not $processId) {
-            Write-Warning "Could not determine process ID for process: $($odataProcess.Name ?? 'Unknown')"
+            $processName = Coalesce $odataProcess.Name, 'Unknown'
+            Write-Warning "Could not determine process ID for process: $processName"
             continue
         }
 
