@@ -17,6 +17,10 @@
     Forces a full refresh of all processes, ignoring the last run timestamp. Use this to rebuild
     the entire dataset from scratch.
 
+.PARAMETER Test
+    Limits the number of processes to retrieve for testing purposes. Useful for validating data
+    mapping and troubleshooting without processing the entire dataset.
+
 .EXAMPLE
     .\Get-ProcessReport.ps1
 
@@ -25,6 +29,9 @@
 
 .EXAMPLE
     .\Get-ProcessReport.ps1 -FullRefresh
+
+.EXAMPLE
+    .\Get-ProcessReport.ps1 -Test 10
 
 .NOTES
     Author: Nintex Process Manager Report Script
@@ -38,7 +45,10 @@ param(
     [string]$ConfigPath,
 
     [Parameter(Mandatory=$false)]
-    [switch]$FullRefresh
+    [switch]$FullRefresh,
+
+    [Parameter(Mandatory=$false)]
+    [int]$Test = 0
 )
 
 # Get script directory - handle cases where $PSScriptRoot is not set
@@ -186,10 +196,15 @@ function Get-ODataProcesses {
         [string]$BaseUrl,
         [string]$Username,
         [string]$ApiKey,
-        $SinceDate = $null
+        $SinceDate = $null,
+        [int]$TopCount = 0
     )
 
-    Write-Host "`nQuerying OData API for process list..." -ForegroundColor Cyan
+    if ($TopCount -gt 0) {
+        Write-Host "`nTEST MODE: Querying OData API for up to $TopCount processes..." -ForegroundColor Yellow
+    } else {
+        Write-Host "`nQuerying OData API for process list..." -ForegroundColor Cyan
+    }
 
     # Create Basic Auth header
     $base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $Username, $ApiKey)))
@@ -199,15 +214,25 @@ function Get-ODataProcesses {
     }
 
     try {
-        # Build the URL with optional date filter
+        # Build the URL with optional date filter and top count
         $url = "${BaseUrl}Processes"
+        $queryParams = @()
 
         # Add OData filter for StateChangeDate if provided
         if ($null -ne $SinceDate) {
             $filterDate = $SinceDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-            $filter = "`$filter=StateChangeDate gt $filterDate"
-            $url = "${url}?${filter}"
+            $queryParams += "`$filter=StateChangeDate gt $filterDate"
             Write-Host "Filtering for processes changed since: $SinceDate" -ForegroundColor Cyan
+        }
+
+        # Add OData top parameter for test mode
+        if ($TopCount -gt 0) {
+            $queryParams += "`$top=$TopCount"
+        }
+
+        # Combine query parameters
+        if ($queryParams.Count -gt 0) {
+            $url = "${url}?" + ($queryParams -join "&")
         }
 
         Write-Verbose "Requesting: $url"
@@ -226,6 +251,16 @@ function Get-ODataProcesses {
             # OData responses typically have a 'value' property containing the array of results
             if ($response.value) {
                 $pageProcesses = $response.value
+
+                # In test mode, limit total results
+                if ($TopCount -gt 0 -and ($allProcesses.Count + $pageProcesses.Count) -gt $TopCount) {
+                    $remainingCount = $TopCount - $allProcesses.Count
+                    $pageProcesses = $pageProcesses | Select-Object -First $remainingCount
+                    $allProcesses += $pageProcesses
+                    Write-Verbose "TEST MODE: Retrieved $($pageProcesses.Count) processes from page $pageCount (Reached limit: $($allProcesses.Count))"
+                    break
+                }
+
                 $allProcesses += $pageProcesses
                 Write-Verbose "Retrieved $($pageProcesses.Count) processes from page $pageCount (Total so far: $($allProcesses.Count))"
             } else {
@@ -245,6 +280,12 @@ function Get-ODataProcesses {
                 $nextLink = $response.nextLink
             }
 
+            # In test mode, stop if we've reached the limit
+            if ($TopCount -gt 0 -and $allProcesses.Count -ge $TopCount) {
+                Write-Verbose "TEST MODE: Reached limit of $TopCount processes"
+                break
+            }
+
             if ($nextLink) {
                 Write-Verbose "Next page available at: $nextLink"
                 $url = $nextLink
@@ -254,7 +295,11 @@ function Get-ODataProcesses {
 
         } while ($nextLink)
 
-        Write-Host "Successfully retrieved $($allProcesses.Count) processes from OData API ($pageCount page(s))" -ForegroundColor Green
+        if ($TopCount -gt 0) {
+            Write-Host "TEST MODE: Retrieved $($allProcesses.Count) processes from OData API ($pageCount page(s))" -ForegroundColor Yellow
+        } else {
+            Write-Host "Successfully retrieved $($allProcesses.Count) processes from OData API ($pageCount page(s))" -ForegroundColor Green
+        }
         return $allProcesses
     }
     catch {
@@ -442,11 +487,15 @@ try {
     Write-Verbose "Username: $($config.ODataAPI.Username)"
     Write-Verbose "ApiKey length: $($config.ODataAPI.ApiKey.Length) characters"
     Write-Verbose "SinceDate: $lastRunDate"
+    if ($Test -gt 0) {
+        Write-Verbose "Test mode enabled: limiting to $Test processes"
+    }
 
     $odataProcesses = Get-ODataProcesses -BaseUrl $config.ODataAPI.BaseUrl `
                                           -Username $config.ODataAPI.Username `
                                           -ApiKey $config.ODataAPI.ApiKey `
-                                          -SinceDate $lastRunDate
+                                          -SinceDate $lastRunDate `
+                                          -TopCount $Test
 
     if ($odataProcesses.Count -eq 0 -and $lastRunDate) {
         Write-Host "`n========================================" -ForegroundColor Green
