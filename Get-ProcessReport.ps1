@@ -41,6 +41,9 @@ param(
     [switch]$FullRefresh
 )
 
+# Set error action preference to stop on all errors
+$ErrorActionPreference = "Stop"
+
 # Global error handler for unhandled exceptions
 trap {
     Write-Host "`n========================================" -ForegroundColor Red
@@ -48,7 +51,7 @@ trap {
     Write-Host "========================================" -ForegroundColor Red
     Write-Host $_.Exception.Message -ForegroundColor Red
     Write-Host "`nPress Enter to exit..." -ForegroundColor Yellow
-    Read-Host
+    $null = Read-Host
     exit 1
 }
 
@@ -391,14 +394,14 @@ try {
         Write-Host "Cached processes: $($cachedProcesses.Count)" -ForegroundColor White
         Write-Host "========================================" -ForegroundColor Green
         Write-Host "`nPress Enter to exit..." -ForegroundColor Yellow
-        Read-Host
+        $null = Read-Host
         exit 0
     }
 
     if ($odataProcesses.Count -eq 0 -and -not $lastRunDate) {
         Write-Warning "No processes found in OData API"
         Write-Host "`nPress Enter to exit..." -ForegroundColor Yellow
-        Read-Host
+        $null = Read-Host
         exit 0
     }
 
@@ -507,15 +510,15 @@ try {
     Write-Host "Processes in report: $($reportData.Count)" -ForegroundColor White
     Write-Host "Output file: $outputPath" -ForegroundColor White
     Write-Host "========================================" -ForegroundColor Green
-    Write-Host "`nPress Enter to exit..." -ForegroundColor Yellow
-    Read-Host
 }
 catch {
     Write-Host "`n========================================" -ForegroundColor Red
     Write-Host "ERROR: Script execution failed" -ForegroundColor Red
     Write-Host "========================================" -ForegroundColor Red
     Write-Error $_
+}
+finally {
+    # This block ALWAYS executes, regardless of success or failure
     Write-Host "`nPress Enter to exit..." -ForegroundColor Yellow
-    Read-Host
-    exit 1
+    $null = Read-Host
 }
