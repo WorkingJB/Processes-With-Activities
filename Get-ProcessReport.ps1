@@ -391,8 +391,9 @@ function Get-RoleNames {
 
     $roleNames = @()
 
-    if ($ProcessDetails.Activities) {
-        foreach ($activity in $ProcessDetails.Activities) {
+    # Navigate to the correct path in the JSON structure
+    if ($ProcessDetails.processJson -and $ProcessDetails.processJson.ProcessProcedures -and $ProcessDetails.processJson.ProcessProcedures.Activity) {
+        foreach ($activity in $ProcessDetails.processJson.ProcessProcedures.Activity) {
             if ($activity.Ownerships -and $activity.Ownerships.Role) {
                 foreach ($role in $activity.Ownerships.Role) {
                     if ($role.Name -and $roleNames -notcontains $role.Name) {
@@ -412,22 +413,21 @@ function Get-SystemTagNames {
 
     $systemTags = @()
 
-    # Check for AutomatedSystemTagId in various locations
-    if ($ProcessDetails.Configuration -and $ProcessDetails.Configuration.AutomatedSystemTagId) {
-        # Note: This returns the ID. To get the actual tag name, you may need to query a tags endpoint
-        # For now, we'll include the ID. You may need to enhance this based on available data
-        $tagId = $ProcessDetails.Configuration.AutomatedSystemTagId
+    # Check for AutomatedSystemTagId in configuration
+    if ($ProcessDetails.configuration -and $ProcessDetails.configuration.AutomatedSystemTagId) {
+        $tagId = $ProcessDetails.configuration.AutomatedSystemTagId
         if ($tagId -and $systemTags -notcontains $tagId) {
             $systemTags += "TagId:$tagId"
         }
     }
 
-    # Check Activities for system information
-    if ($ProcessDetails.Activities) {
-        foreach ($activity in $ProcessDetails.Activities) {
+    # Check Activities for system tags (navigate to correct path in JSON structure)
+    if ($ProcessDetails.processJson -and $ProcessDetails.processJson.ProcessProcedures -and $ProcessDetails.processJson.ProcessProcedures.Activity) {
+        foreach ($activity in $ProcessDetails.processJson.ProcessProcedures.Activity) {
             if ($activity.Ownerships -and $activity.Ownerships.Tag) {
                 foreach ($tag in $activity.Ownerships.Tag) {
-                    if ($tag.Name -and $systemTags -notcontains $tag.Name) {
+                    # Only include System tags (TagFamilyName = "System")
+                    if ($tag.Name -and $tag.TagFamilyName -eq "System" -and $systemTags -notcontains $tag.Name) {
                         $systemTags += $tag.Name
                     }
                 }
