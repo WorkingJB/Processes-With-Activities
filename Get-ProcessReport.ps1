@@ -413,15 +413,7 @@ function Get-SystemTagNames {
 
     $systemTags = @()
 
-    # Check for AutomatedSystemTagId in configuration
-    if ($ProcessDetails.configuration -and $ProcessDetails.configuration.AutomatedSystemTagId) {
-        $tagId = $ProcessDetails.configuration.AutomatedSystemTagId
-        if ($tagId -and $systemTags -notcontains $tagId) {
-            $systemTags += "TagId:$tagId"
-        }
-    }
-
-    # Check Activities for system tags (navigate to correct path in JSON structure)
+    # Extract system tags from Activities (navigate to correct path in JSON structure)
     if ($ProcessDetails.processJson -and $ProcessDetails.processJson.ProcessProcedures -and $ProcessDetails.processJson.ProcessProcedures.Activity) {
         foreach ($activity in $ProcessDetails.processJson.ProcessProcedures.Activity) {
             if ($activity.Ownerships -and $activity.Ownerships.Tag) {
