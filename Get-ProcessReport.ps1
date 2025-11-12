@@ -531,6 +531,14 @@ try {
     $processedCount = 0
     $totalProcesses = $odataProcesses.Count
 
+    # Safety check to prevent divide by zero
+    if ($totalProcesses -eq 0) {
+        Write-Warning "No processes to process after filtering"
+        Write-Host "`nPress Enter to exit..." -ForegroundColor Yellow
+        $null = Read-Host
+        exit 0
+    }
+
     foreach ($odataProcess in $odataProcesses) {
         $processedCount++
         Write-Progress -Activity "Processing processes" -Status "Process $processedCount of $totalProcesses" -PercentComplete (($processedCount / $totalProcesses) * 100)
