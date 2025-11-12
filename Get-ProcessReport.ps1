@@ -264,9 +264,19 @@ function Get-ODataProcesses {
                 $allProcesses += $pageProcesses
                 Write-Verbose "Retrieved $($pageProcesses.Count) processes from page $pageCount (Total so far: $($allProcesses.Count))"
             } else {
-                # Handle non-standard OData response
-                $allProcesses += $response
-                Write-Verbose "Retrieved processes from non-standard response format"
+                # Handle non-standard OData response - check if response is an array or single object
+                if ($response -is [System.Array]) {
+                    # Response is already an array of processes
+                    $allProcesses += $response
+                    Write-Verbose "Retrieved processes from array response format (Count: $($response.Count))"
+                } elseif ($response -and $response.PSObject.Properties.Count -gt 0) {
+                    # Response appears to be a single process object
+                    $allProcesses += $response
+                    Write-Verbose "Retrieved single process from non-standard response format"
+                } else {
+                    Write-Warning "Unexpected OData response format. Response type: $($response.GetType().FullName)"
+                    Write-Verbose "Response: $($response | ConvertTo-Json -Depth 3)"
+                }
             }
 
             # Check for next page link (OData pagination)
