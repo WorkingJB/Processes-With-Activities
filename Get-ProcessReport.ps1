@@ -41,6 +41,17 @@ param(
     [switch]$FullRefresh
 )
 
+# Global error handler for unhandled exceptions
+trap {
+    Write-Host "`n========================================" -ForegroundColor Red
+    Write-Host "CRITICAL ERROR: Unhandled exception" -ForegroundColor Red
+    Write-Host "========================================" -ForegroundColor Red
+    Write-Host $_.Exception.Message -ForegroundColor Red
+    Write-Host "`nPress Enter to exit..." -ForegroundColor Yellow
+    Read-Host
+    exit 1
+}
+
 # Function to load configuration
 function Get-Configuration {
     param([string]$Path)
@@ -496,6 +507,8 @@ try {
     Write-Host "Processes in report: $($reportData.Count)" -ForegroundColor White
     Write-Host "Output file: $outputPath" -ForegroundColor White
     Write-Host "========================================" -ForegroundColor Green
+    Write-Host "`nPress Enter to exit..." -ForegroundColor Yellow
+    Read-Host
 }
 catch {
     Write-Host "`n========================================" -ForegroundColor Red
