@@ -186,7 +186,7 @@ function Get-ODataProcesses {
         [string]$BaseUrl,
         [string]$Username,
         [string]$ApiKey,
-        [DateTime]$SinceDate = $null
+        $SinceDate = $null
     )
 
     Write-Host "`nQuerying OData API for process list..." -ForegroundColor Cyan
@@ -203,7 +203,7 @@ function Get-ODataProcesses {
         $url = "${BaseUrl}Processes"
 
         # Add OData filter for StateChangeDate if provided
-        if ($SinceDate) {
+        if ($null -ne $SinceDate) {
             $filterDate = $SinceDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
             $filter = "`$filter=StateChangeDate gt $filterDate"
             $url = "${url}?${filter}"
