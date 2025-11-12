@@ -405,6 +405,11 @@ try {
     }
 
     # Get processes from OData API (filtered by date if incremental)
+    Write-Verbose "Calling Get-ODataProcesses with BaseUrl: $($config.ODataAPI.BaseUrl)"
+    Write-Verbose "Username: $($config.ODataAPI.Username)"
+    Write-Verbose "ApiKey length: $($config.ODataAPI.ApiKey.Length) characters"
+    Write-Verbose "SinceDate: $lastRunDate"
+
     $odataProcesses = Get-ODataProcesses -BaseUrl $config.ODataAPI.BaseUrl `
                                           -Username $config.ODataAPI.Username `
                                           -ApiKey $config.ODataAPI.ApiKey `
@@ -537,14 +542,46 @@ try {
     Write-Host "========================================" -ForegroundColor Green
 }
 catch {
+    # Capture the error object
+    $errorObject = $_
+
     Write-Host "`n========================================" -ForegroundColor Red
     Write-Host "ERROR: Script execution failed" -ForegroundColor Red
     Write-Host "========================================" -ForegroundColor Red
-    Write-Host "Error Message: $($_.Exception.Message)" -ForegroundColor Red
-    Write-Host "`nFull Error Details:" -ForegroundColor Yellow
-    Write-Host $_.Exception -ForegroundColor Red
-    Write-Host "`nStack Trace:" -ForegroundColor Yellow
-    Write-Host $_.ScriptStackTrace -ForegroundColor Red
+
+    # Display error message
+    if ($errorObject.Exception.Message) {
+        Write-Host "`nError Message:" -ForegroundColor Yellow
+        Write-Host $errorObject.Exception.Message -ForegroundColor Red
+    }
+
+    # Display inner exception if present
+    if ($errorObject.Exception.InnerException) {
+        Write-Host "`nInner Exception:" -ForegroundColor Yellow
+        Write-Host $errorObject.Exception.InnerException.Message -ForegroundColor Red
+    }
+
+    # Display category info
+    if ($errorObject.CategoryInfo) {
+        Write-Host "`nCategory:" -ForegroundColor Yellow
+        Write-Host $errorObject.CategoryInfo -ForegroundColor Red
+    }
+
+    # Display full error
+    Write-Host "`nFull Error:" -ForegroundColor Yellow
+    Write-Host ($errorObject | Out-String) -ForegroundColor Red
+
+    # Display stack trace
+    if ($errorObject.ScriptStackTrace) {
+        Write-Host "`nStack Trace:" -ForegroundColor Yellow
+        Write-Host $errorObject.ScriptStackTrace -ForegroundColor Red
+    }
+
+    # If still nothing, display the error record itself
+    if (-not $errorObject.Exception.Message) {
+        Write-Host "`nError Record:" -ForegroundColor Yellow
+        Write-Host $Error[0] -ForegroundColor Red
+    }
 }
 finally {
     # This block ALWAYS executes, regardless of success or failure
