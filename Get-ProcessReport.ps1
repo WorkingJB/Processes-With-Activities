@@ -395,15 +395,15 @@ function New-ProcessReportRow {
     $systemTags = Get-SystemTagNames -ProcessDetails $ProcessDetails
 
     # Build the report row
-    # Map OData fields to output columns - adjust field names based on actual OData schema
+    # Map OData fields to output columns - uses actual field names from Nintex Promapp OData API
     $reportRow = [PSCustomObject]@{
-        "ProcessId" = Coalesce $ODataProcess.Id, $ODataProcess.UniqueId, $ODataProcess.ProcessId, $ODataProcess.Guid
+        "ProcessId" = Coalesce $ODataProcess.UniqueId, $ODataProcess.Id, $ODataProcess.ProcessId, $ODataProcess.Guid
         "Process Group Path" = Coalesce $ODataProcess.ProcessGroupPath, $ODataProcess.GroupPath, $ODataProcess.Path
         "Process Name" = Coalesce $ODataProcess.Name, $ODataProcess.ProcessName, $ODataProcess.Title, $ProcessDetails.Name
-        "Process Status" = Coalesce $ODataProcess.Status, $ODataProcess.ProcessStatus, $ODataProcess.State, $ProcessDetails.Status
+        "Process Status" = Coalesce $ODataProcess.PublishState, $ODataProcess.Status, $ODataProcess.ProcessStatus, $ODataProcess.State, $ProcessDetails.Status
         "Process Version" = Coalesce $ODataProcess.Version, $ODataProcess.VersionNumber, $ODataProcess.ProcessVersion, $ProcessDetails.Version
-        "Process Expert" = Coalesce $ODataProcess.ProcessExpert, $ODataProcess.Expert, $ODataProcess.ExpertName, $ODataProcess.ProcessExpertName, $ProcessDetails.Expert
-        "Process Owner" = Coalesce $ODataProcess.ProcessOwner, $ODataProcess.Owner, $ODataProcess.OwnerName, $ODataProcess.ProcessOwnerName, $ProcessDetails.Owner
+        "Process Expert" = Coalesce $ODataProcess.ExpertName, $ODataProcess.ProcessExpert, $ODataProcess.Expert, $ODataProcess.ExpertFirstName, $ProcessDetails.Expert
+        "Process Owner" = Coalesce $ODataProcess.OwnerName, $ODataProcess.ProcessOwner, $ODataProcess.Owner, $ODataProcess.OwnerFirstName, $ProcessDetails.Owner
         "Assigned Roles" = $roleNames
         "Assigned System" = $systemTags
         "StateChangeDate" = $ODataProcess.StateChangeDate
@@ -497,13 +497,13 @@ try {
         }
 
         # Skip archived processes
-        $processStatus = Coalesce $odataProcess.Status, $odataProcess.ProcessStatus, $odataProcess.State
-        if ($processStatus -eq "Archived") {
+        $publishState = Coalesce $odataProcess.PublishState, $odataProcess.Status, $odataProcess.ProcessStatus, $odataProcess.State
+        if ($publishState -eq "Archived") {
             Write-Verbose "Skipping archived process: $($odataProcess.Name) (ID: $processId)"
             continue
         }
 
-        Write-Verbose "Processing: $($odataProcess.Name) (ID: $processId, Status: $processStatus)"
+        Write-Verbose "Processing: $($odataProcess.Name) (ID: $processId, PublishState: $publishState)"
 
         # Debug: Show available OData fields for first process
         if ($processedCount -eq 1) {
