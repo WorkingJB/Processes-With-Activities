@@ -398,12 +398,12 @@ function New-ProcessReportRow {
     # Map OData fields to output columns - adjust field names based on actual OData schema
     $reportRow = [PSCustomObject]@{
         "ProcessId" = Coalesce $ODataProcess.Id, $ODataProcess.UniqueId, $ODataProcess.ProcessId, $ODataProcess.Guid
-        "Process Group Path" = Coalesce $ODataProcess.ProcessGroupPath, $ODataProcess.GroupPath
-        "Process Name" = Coalesce $ODataProcess.Name, $ProcessDetails.Name
-        "Process Status" = Coalesce $ODataProcess.Status, $ProcessDetails.Status
-        "Process Version" = Coalesce $ODataProcess.Version, $ProcessDetails.Version
-        "Process Expert" = Coalesce $ODataProcess.ProcessExpert, $ODataProcess.Expert, $ProcessDetails.Expert
-        "Process Owner" = Coalesce $ODataProcess.ProcessOwner, $ODataProcess.Owner, $ProcessDetails.Owner
+        "Process Group Path" = Coalesce $ODataProcess.ProcessGroupPath, $ODataProcess.GroupPath, $ODataProcess.Path
+        "Process Name" = Coalesce $ODataProcess.Name, $ODataProcess.ProcessName, $ODataProcess.Title, $ProcessDetails.Name
+        "Process Status" = Coalesce $ODataProcess.Status, $ODataProcess.ProcessStatus, $ODataProcess.State, $ProcessDetails.Status
+        "Process Version" = Coalesce $ODataProcess.Version, $ODataProcess.VersionNumber, $ODataProcess.ProcessVersion, $ProcessDetails.Version
+        "Process Expert" = Coalesce $ODataProcess.ProcessExpert, $ODataProcess.Expert, $ODataProcess.ExpertName, $ODataProcess.ProcessExpertName, $ProcessDetails.Expert
+        "Process Owner" = Coalesce $ODataProcess.ProcessOwner, $ODataProcess.Owner, $ODataProcess.OwnerName, $ODataProcess.ProcessOwnerName, $ProcessDetails.Owner
         "Assigned Roles" = $roleNames
         "Assigned System" = $systemTags
         "StateChangeDate" = $ODataProcess.StateChangeDate
@@ -496,7 +496,22 @@ try {
             continue
         }
 
-        Write-Verbose "Processing: $($odataProcess.Name) (ID: $processId)"
+        # Skip archived processes
+        $processStatus = Coalesce $odataProcess.Status, $odataProcess.ProcessStatus, $odataProcess.State
+        if ($processStatus -eq "Archived") {
+            Write-Verbose "Skipping archived process: $($odataProcess.Name) (ID: $processId)"
+            continue
+        }
+
+        Write-Verbose "Processing: $($odataProcess.Name) (ID: $processId, Status: $processStatus)"
+
+        # Debug: Show available OData fields for first process
+        if ($processedCount -eq 1) {
+            Write-Verbose "Available OData fields for first process:"
+            $odataProcess.PSObject.Properties | ForEach-Object {
+                Write-Verbose "  $($_.Name) = $($_.Value)"
+            }
+        }
 
         # Get detailed process information
         $processDetails = Get-ProcessDetails -BaseUrl $config.ProcessManagerAPI.BaseUrl `
