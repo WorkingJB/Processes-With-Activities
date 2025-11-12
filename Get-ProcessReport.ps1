@@ -35,11 +35,23 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$false)]
-    [string]$ConfigPath = (Join-Path $PSScriptRoot "config.json"),
+    [string]$ConfigPath,
 
     [Parameter(Mandatory=$false)]
     [switch]$FullRefresh
 )
+
+# Get script directory - handle cases where $PSScriptRoot is not set
+if (-not $PSScriptRoot) {
+    $ScriptDir = Split-Path -Parent -Path $MyInvocation.MyCommand.Definition
+} else {
+    $ScriptDir = $PSScriptRoot
+}
+
+# Set default config path if not provided
+if (-not $ConfigPath) {
+    $ConfigPath = Join-Path $ScriptDir "config.json"
+}
 
 # Set error action preference to stop on all errors
 $ErrorActionPreference = "Stop"
@@ -383,9 +395,9 @@ try {
     $cachedProcesses = @()
 
     if (-not $FullRefresh) {
-        $lastRunDate = Get-LastRunTimestamp -ScriptRoot $PSScriptRoot
+        $lastRunDate = Get-LastRunTimestamp -ScriptRoot $ScriptDir
         if ($lastRunDate) {
-            $cachedProcesses = Get-CachedProcessData -ScriptRoot $PSScriptRoot
+            $cachedProcesses = Get-CachedProcessData -ScriptRoot $ScriptDir
         }
     }
     else {
@@ -497,13 +509,13 @@ try {
     }
 
     # Save cache for next run
-    Save-ProcessDataCache -ScriptRoot $PSScriptRoot -ProcessData $reportData
+    Save-ProcessDataCache -ScriptRoot $ScriptDir -ProcessData $reportData
 
     # Save timestamp for next run
-    Save-LastRunTimestamp -ScriptRoot $PSScriptRoot -Timestamp $scriptStartTime
+    Save-LastRunTimestamp -ScriptRoot $ScriptDir -Timestamp $scriptStartTime
 
     # Export to CSV (exclude internal fields)
-    $outputPath = Join-Path $PSScriptRoot $config.Output.CsvFileName
+    $outputPath = Join-Path $ScriptDir $config.Output.CsvFileName
     Write-Host "`nExporting report to CSV..." -ForegroundColor Cyan
 
     $reportData | Select-Object "Process Group Path", "Process Name", "Process Status", "Process Version", `
